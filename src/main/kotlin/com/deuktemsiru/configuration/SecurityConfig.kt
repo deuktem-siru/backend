@@ -1,0 +1,53 @@
+package com.deuktemsiru.configuration
+
+import com.deuktemsiru.adapter.out.security.JwtAuthenticationFilter
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+
+@Configuration
+@EnableWebSecurity
+class SecurityConfig(
+    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    @Value("\${app.security.dev-endpoints-enabled:false}")
+    private val devEndpointsEnabled: Boolean,
+) {
+
+    @Bean
+    fun filterChain(http: HttpSecurity): SecurityFilterChain {
+        http
+            .csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .authorizeHttpRequests { auth ->
+                val publicMatchers = mutableListOf(
+                    // v1 인증 엔드포인트 (카카오 로그인, 토큰 갱신)
+                    "/api/v1/auth/kakao/login",
+                    "/api/v1/auth/refresh",
+                    // 개발용 API 문서
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/actuator/health",
+                    // 정적 업로드 파일
+                    "/uploads/**",
+                    // 운영자 API — JWT가 아니라 AdminController의 X-Admin-Token 헤더로 인증한다.
+                    "/api/v1/admin/**",
+                )
+                if (devEndpointsEnabled) {
+                    publicMatchers += "/api/v1/auth/debug/login"
+                    publicMatchers += "/actuator/prometheus"
+                }
+                auth.requestMatchers(*publicMatchers.toTypedArray()).permitAll()
+                    .requestMatchers("/api/v1/sellers/**").hasRole("SELLER")
+                    .requestMatchers("/api/v1/cart/**", "/api/v1/orders/**", "/api/v1/wishlist/**").hasRole("CONSUMER")
+                    .anyRequest().authenticated()
+            }
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+        return http.build()
+    }
+}

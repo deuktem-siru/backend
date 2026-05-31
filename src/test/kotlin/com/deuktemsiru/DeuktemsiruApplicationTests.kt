@@ -1,16 +1,18 @@
 package com.deuktemsiru
 
-import com.deuktemsiru.dto.CreateOrderRequest
-import com.deuktemsiru.dto.OrderItemRequest
-import com.deuktemsiru.dto.UpdateOrderStatusRequest
-import com.deuktemsiru.entity.changeSaleStatus
-import com.deuktemsiru.entity.OrderStatus
-import com.deuktemsiru.entity.ProductStatus
-import com.deuktemsiru.repository.MemberRepository
-import com.deuktemsiru.repository.ProductRepository
-import com.deuktemsiru.repository.StoreRepository
-import com.deuktemsiru.service.OrderService
-import com.deuktemsiru.service.StoreService
+import com.deuktemsiru.configuration.*
+
+import com.deuktemsiru.application.dto.CreateOrderRequest
+import com.deuktemsiru.application.dto.OrderItemRequest
+import com.deuktemsiru.application.dto.UpdateOrderStatusRequest
+import com.deuktemsiru.domain.changeSaleStatus
+import com.deuktemsiru.domain.OrderStatus
+import com.deuktemsiru.domain.ProductStatus
+import com.deuktemsiru.adapter.out.persistence.MemberRepository
+import com.deuktemsiru.adapter.out.persistence.ProductRepository
+import com.deuktemsiru.adapter.out.persistence.StoreRepository
+import com.deuktemsiru.application.service.OrderService
+import com.deuktemsiru.application.service.StoreService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -157,6 +159,56 @@ class DeuktemsiruApplicationTests {
         assertEquals(OrderStatus.PENDING, order.status)
         assertEquals(0, reloaded.quantityRemaining)
         assertEquals(ProductStatus.SOLD_OUT, reloaded.status)
+    }
+
+    @Test
+    fun `order creation stores a pickup time inside every product window`() {
+        val buyer = memberRepository.findByEmail("buyer@test.com").get()
+        val product = productRepository.findByStore(storeRepository.findAll().first()).first()
+        val pickupTime = product.pickupStart.toString()
+
+        val created = orderService.createOrder(
+            buyer.memberId,
+            CreateOrderRequest(
+                items = listOf(OrderItemRequest(product.productId, 1)),
+                pickupTime = pickupTime,
+            ),
+        )
+
+        assertEquals(pickupTime, created.pickupTime)
+        assertEquals(pickupTime, orderService.getOrder(buyer.memberId, created.orderId).pickupTime)
+
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            orderService.createOrder(
+                buyer.memberId,
+                CreateOrderRequest(
+                    items = listOf(OrderItemRequest(product.productId, 1)),
+                    pickupTime = product.pickupEnd.plusMinutes(1).toString(),
+                ),
+            )
+        }
+        assertEquals("선택한 픽업 시간이 상품의 픽업 가능 시간을 벗어났습니다.", error.message)
+    }
+
+    @Test
+    fun `order cancellation restores stock and balance exactly once`() {
+        val buyer = memberRepository.findByEmail("buyer@test.com").get()
+        val product = productRepository.findByStore(storeRepository.findAll().first()).first()
+        val originalStock = product.quantityRemaining
+        val originalBalance = buyer.siruBalance
+        val order = orderService.createOrder(
+            buyer.memberId,
+            CreateOrderRequest(items = listOf(OrderItemRequest(product.productId, 1))),
+        )
+
+        val cancelled = orderService.cancelOrder(buyer.memberId, order.orderId)
+
+        assertEquals(OrderStatus.CANCELLED, cancelled.status)
+        assertEquals(originalStock, productRepository.findById(product.productId).get().quantityRemaining)
+        assertEquals(originalBalance, memberRepository.findById(buyer.memberId).get().siruBalance)
+        assertThrows(IllegalArgumentException::class.java) {
+            orderService.cancelOrder(buyer.memberId, order.orderId)
+        }
     }
 
     @Test
