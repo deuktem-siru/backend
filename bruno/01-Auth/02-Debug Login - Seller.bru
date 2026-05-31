@@ -1,0 +1,34 @@
+meta {
+  name: Debug Login - Seller
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/debug/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "role": "SELLER",
+    "email": "bakery@test.com"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  const json = res.getBody();
+  if (json.data) {
+    bru.setVar('sellerAccessToken', json.data.accessToken);
+    bru.setVar('sellerRefreshToken', json.data.refreshToken);
+  }
+}
+
+docs {
+  Stores seller tokens separately so buyer flow can keep using accessToken.
+}

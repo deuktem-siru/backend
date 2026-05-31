@@ -1,0 +1,15 @@
+meta {
+  name: List Stores
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/stores?latitude=37.3452&longitude=126.6878&radius=5000&page=0&size=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,9 @@
+tests {
+  test("JSON API response envelope", function () {
+    const body = res.getBody();
+    if (body && typeof body === "object" && !body.openapi) {
+      expect(body).to.have.property("code");
+      expect(body).to.have.property("message");
+    }
+  });
+}

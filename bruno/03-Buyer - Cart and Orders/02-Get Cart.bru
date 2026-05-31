@@ -1,0 +1,22 @@
+meta {
+  name: Get Cart
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/cart
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+script:post-response {
+  const json = res.getBody();
+  if (json.data && json.data.items && json.data.items.length > 0) {
+    bru.setVar('cartItemId', json.data.items[0].cartItemId);
+  }
+}
