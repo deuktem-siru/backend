@@ -1,6 +1,6 @@
 package com.deuktemsiru.common
 
-import org.springframework.data.domain.PageRequest
+import com.deuktemsiru.application.port.out.PageQuery
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -9,8 +9,8 @@ import java.util.Optional
 fun <T> Optional<T>.orNotFound(message: String): T =
     orElseThrow { NoSuchElementException(message) }
 
-fun safePage(page: Int, size: Int): PageRequest =
-    PageRequest.of(page.coerceAtLeast(0), size.coerceAtLeast(1).coerceAtMost(100))
+fun safePage(page: Int, size: Int): PageQuery =
+    PageQuery(page.coerceAtLeast(0), size.coerceAtLeast(1).coerceAtMost(100))
 
 data class PageSlice<T>(val items: List<T>, val hasNext: Boolean)
 

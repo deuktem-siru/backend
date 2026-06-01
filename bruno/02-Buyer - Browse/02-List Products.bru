@@ -1,0 +1,22 @@
+meta {
+  name: List Products
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/products?latitude=37.3452&longitude=126.6878&radius=5000&page=0&size=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+script:post-response {
+  const json = res.getBody();
+  if (json.data && json.data.products && json.data.products.length > 0) {
+    bru.setVar('productId', json.data.products[0].productId);
+  }
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Confirm Order
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/sellers/orders/{{orderId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sellerAccessToken}}
+}
+
+body:json {
+  {
+    "status": "CONFIRMED"
+  }
+}

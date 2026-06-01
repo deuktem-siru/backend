@@ -1,0 +1,35 @@
+meta {
+  name: Create Order
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/orders
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "items": [
+      {
+        "productId": {{productId}},
+        "quantity": 1
+      }
+    ],
+    "paymentMethod": "CASH"
+  }
+}
+
+script:post-response {
+  const json = res.getBody();
+  if (json.data) {
+    bru.setVar('orderId', json.data.orderId);
+    if (json.data.pickupCode) bru.setVar('pickupCode', json.data.pickupCode);
+  }
+}

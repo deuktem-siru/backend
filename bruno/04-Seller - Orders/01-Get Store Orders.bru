@@ -1,0 +1,15 @@
+meta {
+  name: Get Store Orders
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/sellers/orders
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sellerAccessToken}}
+}

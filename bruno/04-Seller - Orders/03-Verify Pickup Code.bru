@@ -1,0 +1,15 @@
+meta {
+  name: Verify Pickup Code
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/sellers/pickup/verify?code={{pickupCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sellerAccessToken}}
+}

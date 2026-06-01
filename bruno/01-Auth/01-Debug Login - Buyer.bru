@@ -1,0 +1,33 @@
+meta {
+  name: Debug Login - Buyer
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/debug/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "role": "CONSUMER"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  const json = res.getBody();
+  if (json.data) {
+    bru.setVar('accessToken', json.data.accessToken);
+    bru.setVar('refreshToken', json.data.refreshToken);
+  }
+}
+
+docs {
+  Requires dev profile or app.security.dev-endpoints-enabled=true.
+}
